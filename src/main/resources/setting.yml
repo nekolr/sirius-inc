@@ -1,0 +1,2 @@
+# 生成 svn changelog 的磁盘路径，默认情况下在用户目录下生成，文件名为 changelog.xml
+svnChangelogOutPath: USER_PRO_FILE

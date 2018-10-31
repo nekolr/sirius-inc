@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import javafx.scene.shape.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
+      prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.nekolr.view.controller.MainController">
+    <children>
+        <Pane prefHeight="400.0" prefWidth="600.0">
+            <children>
+                <TextField fx:id="svnRepositoryURL" cache="true" layoutX="250.0" layoutY="41.0" prefHeight="15.0"
+                           prefWidth="212.0"/>
+                <Label layoutX="151.0" layoutY="45.0" text="svn 仓库地址"/>
+                <Label layoutX="175.0" layoutY="226.0" text="svn 账号"/>
+                <TextField fx:id="usernameField" cache="true" layoutX="251.0" layoutY="222.0" prefHeight="23.0"
+                           prefWidth="212.0" promptText="默认使用本地缓存"/>
+                <Label layoutX="175.0" layoutY="275.0" text="svn 密码"/>
+                <PasswordField fx:id="passwordField" cache="true" layoutX="250.0" layoutY="271.0" prefHeight="23.0"
+                               prefWidth="212.0" promptText="默认使用本地缓存"/>
+                <Label layoutX="125.0" layoutY="89.0" text="编译后项目根目录"/>
+                <TextField fx:id="compiledProjectDirField" cache="true" layoutX="249.0" layoutY="85.0" prefHeight="15.0"
+                           prefWidth="212.0"/>
+                <Button fx:id="buildButton" layoutX="146.0" layoutY="324.0" mnemonicParsing="false"
+                        onMouseClicked="#build" prefHeight="33.0" prefWidth="309.0" text="生成"/>
+                <Label layoutX="137.0" layoutY="134.0" text="增量包输出目录"/>
+                <TextField fx:id="targetUpdatePackageDirField" cache="true" layoutX="250.0" layoutY="130.0"
+                           prefHeight="15.0" prefWidth="212.0"/>
+                <Label layoutX="226.0" layoutY="45.0" text="*" textFill="RED"/>
+                <Label layoutX="226.0" layoutY="89.0" text="*" textFill="RED"/>
+                <Label layoutX="185.0" layoutY="178.0" text="版本号"/>
+                <TextField fx:id="versionNumbersField" cache="true" layoutX="249.0" layoutY="174.0" prefHeight="15.0"
+                           prefWidth="212.0" promptText="多个版本号以逗号分隔"/>
+                <Label layoutX="226.0" layoutY="178.0" text="*" textFill="RED"/>
+                <Label layoutX="226.0" layoutY="134.0" text="*" textFill="RED"/>
+            </children>
+        </Pane>
+    </children>
+</VBox>
