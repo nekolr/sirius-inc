@@ -352,7 +352,7 @@ public class App {
      */
     private static String buildSvnVersionNumberParams(String[] numbers) {
         StringBuilder stringBuilder = new StringBuilder();
-        Arrays.stream(numbers).forEach(number -> stringBuilder.append("-r " + number));
+        Arrays.stream(numbers).forEach(number -> stringBuilder.append(" -r " + number));
         return stringBuilder.toString();
     }
 }
