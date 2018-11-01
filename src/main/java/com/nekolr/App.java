@@ -67,7 +67,7 @@ public class App {
         // 解析完毕后删除 changelog 文件
         deleteChangelogFile(setting.getSvnChangelogOutPath());
         // 收集所有的文件路径
-        List<String> filePathList = collectTargetFileList(logEntryList);
+        List<String> filePathList = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
         // 生成更新包
         buildTargetUpdatePackage(setting.getTargetUpdatePackageDir(), filePathList, setting.getCompiledProjectDir());
         // 打开更新包目录
@@ -159,7 +159,7 @@ public class App {
      * @param logEntries
      * @return
      */
-    private static List<String> collectTargetFileList(List<LogEntry> logEntries) {
+    private static List<String> collectTargetFileList(List<LogEntry> logEntries, String compiledProjectDir) {
         List<String> filePathList = new ArrayList<>();
         if (logEntries != null) {
             for (LogEntry logEntry : logEntries) {
@@ -167,16 +167,20 @@ public class App {
                 for (LogEntry.Path pathEntry : pathEntryList) {
                     String targetFilePath;
                     String path = pathEntry.getPath();
-                    if (path.indexOf(JAVA_SRC_PREFIX) != -1) {
-                        targetFilePath = findJavaCompiledFile(path);
-                    } else if (path.indexOf(RESOURCE_PREFIX) != -1) {
-                        targetFilePath = findResourceFile(path);
-                    } else if (path.indexOf(OTHER_PREFIX) != -1) {
-                        targetFilePath = findOtherFile(path);
-                    } else {
-                        throw new NoMatchFileFoundException("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
+                    // 如果是删除文件，则不做处理
+                    if (!"D".equalsIgnoreCase(pathEntry.getAction())) {
+                        if (path.indexOf(JAVA_SRC_PREFIX) != -1) {
+                            targetFilePath = findJavaCompiledFile(path);
+                            filePathList.addAll(findInnerClassFiles(compiledProjectDir, targetFilePath));
+                        } else if (path.indexOf(RESOURCE_PREFIX) != -1) {
+                            targetFilePath = findResourceFile(path);
+                        } else if (path.indexOf(OTHER_PREFIX) != -1) {
+                            targetFilePath = findOtherFile(path);
+                        } else {
+                            throw new NoMatchFileFoundException("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
+                        }
+                        filePathList.add(targetFilePath);
                     }
-                    filePathList.add(targetFilePath);
                 }
             }
         }
@@ -238,6 +242,28 @@ public class App {
         // 加 19 是移动到匹配的文本末尾
         int resourceIndex = svnFilePath.indexOf(RESOURCE_PREFIX) + 19;
         return "WEB-INF" + File.separator + "classes" + File.separator + svnFilePath.substring(resourceIndex);
+    }
+
+
+    /**
+     * 寻找所有的内部类
+     *
+     * @param compiledProjectDir
+     * @param classFilePath      class 文件部分路径
+     * @return
+     */
+    private static List<String> findInnerClassFiles(String compiledProjectDir, String classFilePath) {
+        File file = new File(compiledProjectDir + File.separator + classFilePath);
+        List<String> fileList = new ArrayList<>();
+        String fileNameNoSuffix = file.getName().substring(0, file.getName().lastIndexOf("."));
+        String prefix = classFilePath.substring(0, classFilePath.lastIndexOf(fileNameNoSuffix));
+        File[] folderFiles = file.getParentFile().listFiles();
+        for (File ele : folderFiles) {
+            if (ele.getName().contains(fileNameNoSuffix + "$")) {
+                fileList.add(prefix + ele.getName());
+            }
+        }
+        return fileList;
     }
 
     /**
