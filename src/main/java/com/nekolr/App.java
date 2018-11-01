@@ -27,12 +27,12 @@ public class App {
     /**
      * Windows 下 svn log 带用户名密码命令模板
      */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS = "cmd /C svn log --xml --no-auth-cache --username {0} --password {1} -v {2} {3} > {4}";
+    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS = "cmd /c svn log --xml --no-auth-cache --username {0} --password {1} -v {2} {3} > {4}";
 
     /**
      * Windows 下 svn log 命令模板
      */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS = "cmd /C svn log --xml -v {0} {1} > {2}";
+    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS = "cmd /c svn log --xml -v {0} {1} > {2}";
 
     /**
      * 如果配置默认的输出路径为 USER_PRO_FILE，则表示使用用户目录
@@ -251,12 +251,12 @@ public class App {
                 && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
                     buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                    setting.getSvnRepositoryURL(), setting.getTargetUpdatePackageDir());
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
         } else {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
                     setting.getUsername(), setting.getPassword(),
                     buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                    setting.getSvnRepositoryURL(), setting.getTargetUpdatePackageDir());
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
         }
 
         CommandUtils.exec(command);
