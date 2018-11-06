@@ -1,4 +1,4 @@
-group 'com.tap'
+group 'com.nekolr'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
