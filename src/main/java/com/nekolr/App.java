@@ -7,6 +7,7 @@ import com.nekolr.model.Setting;
 import com.nekolr.support.NoMatchFileFoundException;
 import com.nekolr.util.ClassUtils;
 import com.nekolr.util.CommandUtils;
+import com.nekolr.util.OSUtils;
 import com.nekolr.util.YmlUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,9 +31,19 @@ public class App {
     private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS = "cmd /c svn log --xml --no-auth-cache --username {0} --password {1} -v {2} {3} > {4}";
 
     /**
+     * shell 下 svn log 带用户名密码命令模板
+     */
+    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3}";
+
+    /**
      * Windows 下 svn log 命令模板
      */
     private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS = "cmd /c svn log --xml -v {0} {1} > {2}";
+
+    /**
+     * shell 下 svn log 命令模板
+     */
+    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL = "svn log --xml -v {0} {1}";
 
     /**
      * 如果配置默认的输出路径为 USER_PRO_FILE，则表示使用用户目录
@@ -273,19 +284,38 @@ public class App {
      */
     private static void buildSvnChangelogFile(Setting setting) throws Exception {
         String command;
-        if ((setting.getUsername() == null || "".equals(setting.getUsername()))
-                && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
-            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
-                    buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
-        } else {
-            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
-                    setting.getUsername(), setting.getPassword(),
-                    buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
-        }
+        String result;
+        if (OSUtils.isWindows()) {
+            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
+                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+            } else {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
+                        setting.getUsername(), setting.getPassword(),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+            }
 
-        CommandUtils.exec(command);
+            CommandUtils.exec(command);
+        } else {
+            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
+                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL());
+            } else {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
+                        setting.getUsername(), setting.getPassword(),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL());
+            }
+
+            result = CommandUtils.exec(command);
+            // 写 xml 文件
+            IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
+        }
     }
 
     /**
