@@ -23,4 +23,8 @@ public class YmlUtils {
     public static <T> T loadYml(InputStream input, Class<T> type) {
         return yaml.loadAs(input, type);
     }
+
+    public static <T> String dumpObject(T object) {
+        return yaml.dump(object);
+    }
 }
