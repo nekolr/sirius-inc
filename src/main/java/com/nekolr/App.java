@@ -333,12 +333,12 @@ public class App {
                     && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
                         buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                        setting.getSvnRepositoryURL());
+                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             } else {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
                         setting.getUsername(), setting.getPassword(),
                         buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
-                        setting.getSvnRepositoryURL());
+                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             }
             // 生成 shell 文件
             buildShellFile(command);
