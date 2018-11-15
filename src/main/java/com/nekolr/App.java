@@ -31,9 +31,14 @@ public class App {
     private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS = "cmd /c svn log --xml --no-auth-cache --username {0} --password {1} -v {2} {3} > {4}";
 
     /**
-     * shell 下 svn log 带用户名密码命令模板
+     * Linux 下 svn log 带用户名密码命令模板
      */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3}";
+    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3}";
+
+    /**
+     * Mac OS/Mac OS X 下 svn log 带用户名密码命令模板
+     */
+    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3} > {4}";
 
     /**
      * Windows 下 svn log 命令模板
@@ -41,9 +46,14 @@ public class App {
     private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS = "cmd /c svn log --xml -v {0} {1} > {2}";
 
     /**
-     * shell 下 svn log 命令模板
+     * Linux 下 svn log 命令模板
      */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL = "svn log --xml -v {0} {1}";
+    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX = "svn log --xml -v {0} {1}";
+
+    /**
+     * Mac OS/Mac OS X 下 svn log 命令模板
+     */
+    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL = "svn log --xml -v {0} {1} > {2}";
 
     /**
      * 如果配置默认的输出路径为 USER_PRO_FILE，则表示使用用户目录
@@ -76,7 +86,7 @@ public class App {
         // 解析 svn changelog 文件
         List<LogEntry> logEntryList = parseXml(setting.getSvnChangelogOutPath());
         // 解析完毕后删除 changelog 文件
-        deleteChangelogFile(setting.getSvnChangelogOutPath());
+        deleteFile(setting.getSvnChangelogOutPath());
         // 收集所有的文件路径
         List<String> filePathList = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
         // 生成更新包
@@ -91,17 +101,20 @@ public class App {
      * @param targetUpdatePackageDir
      */
     private static void openUpdatePackageDir(String targetUpdatePackageDir) {
-        String command = "cmd /c start " + targetUpdatePackageDir;
-        CommandUtils.exec(command);
+        // 只在 Windows 下才主动打开文件夹
+        if (OSUtils.isWindows()) {
+            String command = "cmd /c start " + targetUpdatePackageDir;
+            CommandUtils.exec(command);
+        }
     }
 
     /**
-     * 删除 svn changelog 文件
+     * 删除文件
      *
-     * @param svnChangelogOutPath
+     * @param filePath
      */
-    private static void deleteChangelogFile(String svnChangelogOutPath) {
-        File file = new File(svnChangelogOutPath);
+    private static void deleteFile(String filePath) {
+        File file = new File(filePath);
         if (file.exists()) {
             file.delete();
         }
@@ -299,7 +312,23 @@ public class App {
             }
 
             CommandUtils.exec(command);
-        } else {
+        } else if (OSUtils.isLinux()) {
+            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
+                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX,
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL());
+            } else {
+                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX,
+                        setting.getUsername(), setting.getPassword(),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        setting.getSvnRepositoryURL());
+            }
+
+            result = CommandUtils.exec(command);
+            // 写 xml 文件
+            IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
+        } else if (OSUtils.isMacOS() || OSUtils.isMacOSX()) {
             if ((setting.getUsername() == null || "".equals(setting.getUsername()))
                     && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
@@ -311,11 +340,30 @@ public class App {
                         buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
                         setting.getSvnRepositoryURL());
             }
-
-            result = CommandUtils.exec(command);
-            // 写 xml 文件
-            IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
+            // 生成 shell 文件
+            buildShellFile(command);
+            // 执行 shell 文件
+            CommandUtils.exec("/bin/sh ./svn-log.sh");
+            // 删除 shell 文件
+            deleteFile("svn-log.sh");
         }
+    }
+
+    /**
+     * 生成 shell 文件
+     *
+     * @param command
+     * @throws FileNotFoundException
+     */
+    private static void buildShellFile(String command) throws FileNotFoundException {
+        // 写 shell 文件
+        String head = "#!/bin/sh";
+        if (OSUtils.isMacOS()) {
+            head += "\r";
+        } else if (OSUtils.isMacOSX()) {
+            head += "\n";
+        }
+        IoUtil.write(new FileOutputStream("svn-log.sh"), "UTF-8", true, head + command);
     }
 
     /**
