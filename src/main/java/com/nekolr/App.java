@@ -279,12 +279,14 @@ public class App {
     private static List<String> findInnerClassFiles(String compiledProjectDir, String classFilePath) {
         File file = new File(compiledProjectDir + File.separator + classFilePath);
         List<String> fileList = new ArrayList<>();
-        String fileNameNoSuffix = file.getName().substring(0, file.getName().lastIndexOf("."));
-        String prefix = classFilePath.substring(0, classFilePath.lastIndexOf(fileNameNoSuffix));
-        File[] folderFiles = file.getParentFile().listFiles();
-        for (File ele : folderFiles) {
-            if (ele.getName().contains(fileNameNoSuffix + "$")) {
-                fileList.add(prefix + ele.getName());
+        if (!file.isDirectory()) {
+            String fileNameNoSuffix = file.getName().substring(0, file.getName().lastIndexOf("."));
+            String prefix = classFilePath.substring(0, classFilePath.lastIndexOf(fileNameNoSuffix));
+            File[] folderFiles = file.getParentFile().listFiles();
+            for (File ele : folderFiles) {
+                if (ele.getName().contains(fileNameNoSuffix + "$")) {
+                    fileList.add(prefix + ele.getName());
+                }
             }
         }
         return fileList;
