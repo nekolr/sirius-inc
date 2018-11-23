@@ -129,6 +129,11 @@ public class MainController implements Initializable {
             return false;
         }
 
+        if (targetUpdatePackageDirField.getText() == null || "".equals(targetUpdatePackageDirField.getText())) {
+            alert("错误", "", "增量包输出目录不能为空");
+            return false;
+        }
+
         if (versionNumbersField.getText() == null || "".equals(versionNumbersField.getText())) {
             alert("错误", "", "版本号不能为空");
             return false;
