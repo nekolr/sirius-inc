@@ -5,10 +5,7 @@ import cn.hutool.core.util.XmlUtil;
 import com.nekolr.model.LogEntry;
 import com.nekolr.model.Setting;
 import com.nekolr.support.NoMatchFileFoundException;
-import com.nekolr.util.ClassUtils;
-import com.nekolr.util.CommandUtils;
-import com.nekolr.util.OSUtils;
-import com.nekolr.util.YmlUtils;
+import com.nekolr.util.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -69,6 +66,16 @@ public class App {
      * 资源文件一般所在目录前缀
      */
     private static final String RESOURCE_PREFIX = "src/main/resources";
+
+    /**
+     * java 测试源代码一般所在目录前缀
+     */
+    private static final String JAVA_TEST_SRC_PREFIX = "src/test/java";
+
+    /**
+     * 测试资源文件一般所在目录前缀
+     */
+    private static final String RESOURCE_TEST_PREFIX = "src/test/resources";
 
     /**
      * 其他文件一般所在目录前缀
@@ -200,6 +207,9 @@ public class App {
                             targetFilePath = findResourceFile(path);
                         } else if (path.indexOf(OTHER_PREFIX) != -1) {
                             targetFilePath = findOtherFile(path);
+                            // 测试源代码和测试资源文件不打包
+                        } else if (path.indexOf(JAVA_TEST_SRC_PREFIX) != -1 || path.indexOf(RESOURCE_TEST_PREFIX) != -1) {
+                            continue;
                         } else {
                             throw new NoMatchFileFoundException("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
                         }
@@ -304,12 +314,12 @@ public class App {
             if ((setting.getUsername() == null || "".equals(setting.getUsername()))
                     && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             } else {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
                         setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             }
 
@@ -318,12 +328,12 @@ public class App {
             if ((setting.getUsername() == null || "".equals(setting.getUsername()))
                     && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL());
             } else {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX,
                         setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL());
             }
 
@@ -334,12 +344,12 @@ public class App {
             if ((setting.getUsername() == null || "".equals(setting.getUsername()))
                     && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             } else {
                 command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
                         setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers().split(",")),
+                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
                         setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
             }
             // 生成 shell 文件
@@ -453,10 +463,11 @@ public class App {
     /**
      * 生成 svn 版本查看日志的版本参数
      *
-     * @param numbers 版本参数数组
+     * @param versionNumbers 版本参数字符串
      * @return
      */
-    private static String buildSvnVersionNumberParams(String[] numbers) {
+    private static String buildSvnVersionNumberParams(String versionNumbers) {
+        String[] numbers = versionNumbers.split(" ");
         StringBuilder stringBuilder = new StringBuilder();
         Arrays.stream(numbers).forEach(number -> stringBuilder.append(" -r " + number));
         return stringBuilder.toString();

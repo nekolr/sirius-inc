@@ -33,7 +33,7 @@
                 <Label layoutX="226.0" layoutY="89.0" text="*" textFill="RED"/>
                 <Label layoutX="185.0" layoutY="178.0" text="版本号"/>
                 <TextField fx:id="versionNumbersField" cache="true" layoutX="249.0" layoutY="174.0" prefHeight="15.0"
-                           prefWidth="212.0" promptText="多个版本号以逗号分隔"/>
+                           prefWidth="212.0" promptText="多个版本号以空格分隔"/>
                 <Label layoutX="226.0" layoutY="178.0" text="*" textFill="RED"/>
                 <Label layoutX="226.0" layoutY="134.0" text="*" textFill="RED"/>
             </children>
