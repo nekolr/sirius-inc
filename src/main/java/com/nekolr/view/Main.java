@@ -38,6 +38,8 @@ public class Main extends Application {
             // 标题
             primaryStage.setTitle(TITLE);
             primaryStage.setScene(new Scene(root));
+            // 防止最大化
+            primaryStage.setResizable(false);
             // 图标
             primaryStage.getIcons().add(new Image(ClassUtils.getDefaultClassLoader().getResourceAsStream("sirius-inc.png")));
             primaryStage.show();
