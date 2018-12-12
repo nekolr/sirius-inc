@@ -289,6 +289,9 @@ public class App {
     private static List<String> findInnerClassFiles(String compiledProjectDir, String classFilePath) {
         File file = new File(compiledProjectDir + File.separator + classFilePath);
         List<String> fileList = new ArrayList<>();
+        if (!file.exists()) {
+            throw new RuntimeException(file.getAbsolutePath() + " 文件不存在");
+        }
         if (!file.isDirectory()) {
             String fileNameNoSuffix = file.getName().substring(0, file.getName().lastIndexOf("."));
             String prefix = classFilePath.substring(0, classFilePath.lastIndexOf(fileNameNoSuffix));
