@@ -28,4 +28,7 @@ public class OSUtils {
         return OS.indexOf("windows") != -1;
     }
 
+    public static String getOS() {
+        return OS;
+    }
 }

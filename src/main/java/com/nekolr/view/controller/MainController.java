@@ -4,6 +4,7 @@ package com.nekolr.view.controller;
 import cn.hutool.core.io.IoUtil;
 import com.nekolr.App;
 import com.nekolr.model.Setting;
+import com.nekolr.util.LogUtils;
 import com.nekolr.util.YmlUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -108,8 +109,12 @@ public class MainController implements Initializable {
         userSetting.setPassword(passwordField.getText());
 
         try {
-            App.run(userSetting);
-            alert("成功", "", "执行完毕");
+            boolean hasError = App.run(userSetting);
+            if (hasError) {
+                alert("成功", "存在部分错误，请查看日志：" + LogUtils.getLogFile(), "执行完毕");
+            } else {
+                alert("成功", "", "执行完毕");
+            }
         } catch (Exception e) {
             alert("失败", "", e.getMessage());
         }

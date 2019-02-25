@@ -3,8 +3,8 @@ package com.nekolr;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.XmlUtil;
 import com.nekolr.model.LogEntry;
+import com.nekolr.model.Result;
 import com.nekolr.model.Setting;
-import com.nekolr.support.NoMatchFileFoundException;
 import com.nekolr.util.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -78,14 +78,21 @@ public class App {
     private static final String RESOURCE_TEST_PREFIX = "src/test/resources";
 
     /**
+     * Maven POM 文件
+     */
+    private static final String POM_FILE = "pom.xml";
+
+    /**
      * 其他文件一般所在目录前缀
      */
     private static final String OTHER_PREFIX = "src/main/webapp";
 
     /**
      * 逻辑入口
+     *
+     * @return 是否存在错误
      */
-    public static void run(Setting userSetting) throws Exception {
+    public static boolean run(Setting userSetting) throws Exception {
         // 获取全局配置
         Setting setting = getDefaultSetting(userSetting);
         // 生成 svn changelog 文件
@@ -95,11 +102,13 @@ public class App {
         // 解析完毕后删除 changelog 文件
         deleteFile(setting.getSvnChangelogOutPath());
         // 收集所有的文件路径
-        List<String> filePathList = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
+        Result<List<String>> result = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
         // 生成更新包
-        buildTargetUpdatePackage(setting.getTargetUpdatePackageDir(), filePathList, setting.getCompiledProjectDir());
+        buildTargetUpdatePackage(setting.getTargetUpdatePackageDir(), result.getData(), setting.getCompiledProjectDir());
         // 打开更新包目录
         openUpdatePackageDir(setting.getTargetUpdatePackageDir());
+
+        return result.isHasError();
     }
 
     /**
@@ -190,13 +199,14 @@ public class App {
      * @param logEntries
      * @return
      */
-    private static List<String> collectTargetFileList(List<LogEntry> logEntries, String compiledProjectDir) {
+    private static Result<List<String>> collectTargetFileList(List<LogEntry> logEntries, String compiledProjectDir) {
         List<String> filePathList = new ArrayList<>();
+        Result<List<String>> result = new Result<>();
         if (logEntries != null) {
             for (LogEntry logEntry : logEntries) {
                 List<LogEntry.Path> pathEntryList = logEntry.getPaths();
                 for (LogEntry.Path pathEntry : pathEntryList) {
-                    String targetFilePath;
+                    String targetFilePath = null;
                     String path = pathEntry.getPath();
                     // 如果是删除文件，则不做处理
                     if (!"D".equalsIgnoreCase(pathEntry.getAction())) {
@@ -210,15 +220,21 @@ public class App {
                             // 测试源代码和测试资源文件不打包
                         } else if (path.indexOf(JAVA_TEST_SRC_PREFIX) != -1 || path.indexOf(RESOURCE_TEST_PREFIX) != -1) {
                             continue;
+                            // POM 文件不打包
+                        } else if (path.lastIndexOf(POM_FILE) != -1) {
+                            continue;
                         } else {
-                            throw new NoMatchFileFoundException("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
+                            // 写日志
+                            LogUtils.write("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
+                            result.setHasError(Boolean.TRUE);
                         }
                         filePathList.add(targetFilePath);
                     }
                 }
             }
         }
-        return filePathList;
+        result.setData(filePathList);
+        return result;
     }
 
     /**
