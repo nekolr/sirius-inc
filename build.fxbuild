@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<anttasks:AntTask xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:anttasks="http://org.eclipse.fx.ide.jdt/1.0" buildDirectory="${project}/build">
+  <deploy packagingFormat="all">
+    <application name="sirius-inc" mainclass="com.nekolr.view.Main" version="0.6"/>
+    <info title="sirius-inc" vendor="sirius"/>
+  </deploy>
+  <signjar/>
+</anttasks:AntTask>
