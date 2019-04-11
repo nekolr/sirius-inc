@@ -1,5 +1,4 @@
-# sirius-inc
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fnekolr%2Fsirius-inc.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fnekolr%2Fsirius-inc?ref=badge_shield)  
+# sirius-inc 
 Incremental update package util
 
 # preview
