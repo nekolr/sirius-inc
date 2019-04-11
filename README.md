@@ -1,7 +1,7 @@
-# sirius-inc 
+## Introduction
 Incremental update package util
 
-# preview
+## Preview
 ![preview](https://github.com/nekolr/sirius-inc/blob/master/snapshot/sirius-inc.png)
 
 
