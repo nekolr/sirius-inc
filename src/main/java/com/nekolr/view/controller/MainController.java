@@ -75,9 +75,11 @@ public class MainController implements Initializable {
     }
 
     /**
-     * 持久化当前用户配置
+     * 填充设置实体
+     *
+     * @return
      */
-    private void saveCurrentSetting() {
+    private Setting fillSetting() {
         Setting setting = new Setting();
         setting.setSvnRepositoryURL(svnRepositoryURL.getText());
         setting.setCompiledProjectDir(compiledProjectDirField.getText());
@@ -85,7 +87,14 @@ public class MainController implements Initializable {
         setting.setVersionNumbers(versionNumbersField.getText());
         setting.setUsername(usernameField.getText());
         setting.setPassword(passwordField.getText());
+        return setting;
+    }
 
+    /**
+     * 持久化当前用户配置
+     */
+    private void saveCurrentSetting() {
+        Setting setting = this.fillSetting();
         String content = YmlUtils.dumpObject(setting);
 
         File currentSettingFile = new File(USER_LAST_SETTING_FILE);
@@ -100,14 +109,7 @@ public class MainController implements Initializable {
      * 执行主逻辑
      */
     private void executeMainLogic() {
-        Setting userSetting = new Setting();
-        userSetting.setSvnRepositoryURL(svnRepositoryURL.getText());
-        userSetting.setCompiledProjectDir(compiledProjectDirField.getText());
-        userSetting.setTargetUpdatePackageDir(targetUpdatePackageDirField.getText());
-        userSetting.setVersionNumbers(versionNumbersField.getText());
-        userSetting.setUsername(usernameField.getText());
-        userSetting.setPassword(passwordField.getText());
-
+        Setting userSetting = this.fillSetting();
         try {
             boolean hasError = App.run(userSetting);
             if (hasError) {
