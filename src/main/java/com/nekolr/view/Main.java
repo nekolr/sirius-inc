@@ -17,7 +17,7 @@ import java.io.IOException;
  */
 public class Main extends Application {
 
-    private static final String TITLE = "Sirius 增量包生成工具 V0.6";
+    private static final String TITLE = "Sirius 增量包生成工具 0.7.0";
 
     @Override
     public void start(Stage primaryStage) {

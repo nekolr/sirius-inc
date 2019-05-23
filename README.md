@@ -2,7 +2,7 @@
 Incremental update package util
 
 ## Preview
-![preview](https://github.com/nekolr/sirius-inc/blob/master/snapshot/sirius-inc.png)
+![preview](https://github.com/nekolr/sirius-inc/blob/master/media/sirius-inc.png)
 
 
 ## License
