@@ -1,4 +1,4 @@
-package com.nekolr;
+package com.nekolr.service;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.XmlUtil;
@@ -14,79 +14,16 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.nekolr.Constants.*;
 
 /**
  * 主程序
  *
  * @author nekolr
  */
-public class App {
-
-    /**
-     * Windows 下 svn log 带用户名密码命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS = "cmd /c svn log --xml --no-auth-cache --username {0} --password {1} -v {2} {3} > {4}";
-
-    /**
-     * Linux 下 svn log 带用户名密码命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3}";
-
-    /**
-     * Mac OS/Mac OS X 下 svn log 带用户名密码命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL = "svn log --xml --no-auth-cache --username={0} --password={1} -v {2} {3} > {4}";
-
-    /**
-     * Windows 下 svn log 命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS = "cmd /c svn log --xml -v {0} {1} > {2}";
-
-    /**
-     * Linux 下 svn log 命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX = "svn log --xml -v {0} {1}";
-
-    /**
-     * Mac OS/Mac OS X 下 svn log 命令模板
-     */
-    private static final String SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL = "svn log --xml -v {0} {1} > {2}";
-
-    /**
-     * 如果配置默认的输出路径为 USER_PRO_FILE，则表示使用用户目录
-     */
-    private static final String DEFAULT_OUT_PATH = "USER_PRO_FILE";
-
-    /**
-     * java 源代码一般所在目录前缀
-     */
-    private static final String JAVA_SRC_PREFIX = "src/main/java";
-
-    /**
-     * 资源文件一般所在目录前缀
-     */
-    private static final String RESOURCE_PREFIX = "src/main/resources";
-
-    /**
-     * java 测试源代码一般所在目录前缀
-     */
-    private static final String JAVA_TEST_SRC_PREFIX = "src/test/java";
-
-    /**
-     * 测试资源文件一般所在目录前缀
-     */
-    private static final String RESOURCE_TEST_PREFIX = "src/test/resources";
-
-    /**
-     * Maven POM 文件
-     */
-    private static final String POM_FILE = "pom.xml";
-
-    /**
-     * 其他文件一般所在目录前缀
-     */
-    private static final String OTHER_PREFIX = "src/main/webapp";
-
+public class ApplicationService {
     /**
      * 逻辑入口
      *
@@ -96,44 +33,19 @@ public class App {
         // 获取全局配置
         Setting setting = getDefaultSetting(userSetting);
         // 生成 svn changelog 文件
-        buildSvnChangelogFile(setting);
+        generateSvnChangelogFile(setting);
         // 解析 svn changelog 文件
         List<LogEntry> logEntryList = parseXml(setting.getSvnChangelogOutPath());
         // 解析完毕后删除 changelog 文件
-        deleteFile(setting.getSvnChangelogOutPath());
+        FileUtils.deleteFile(setting.getSvnChangelogOutPath());
         // 收集所有的文件路径
         Result<List<String>> result = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
         // 生成更新包
         buildTargetUpdatePackage(setting.getTargetUpdatePackageDir(), result.getData(), setting.getCompiledProjectDir());
         // 打开更新包目录
-        openUpdatePackageDir(setting.getTargetUpdatePackageDir());
+        FileUtils.openDirectoryUnderWindows(setting.getTargetUpdatePackageDir());
 
         return result.isHasError();
-    }
-
-    /**
-     * 打开增量包目录
-     *
-     * @param targetUpdatePackageDir
-     */
-    private static void openUpdatePackageDir(String targetUpdatePackageDir) {
-        // 只在 Windows 下才主动打开文件夹
-        if (OSUtils.isWindows()) {
-            String command = "cmd /c start " + targetUpdatePackageDir;
-            CommandUtils.exec(command);
-        }
-    }
-
-    /**
-     * 删除文件
-     *
-     * @param filePath
-     */
-    private static void deleteFile(String filePath) {
-        File file = new File(filePath);
-        if (file.exists()) {
-            file.delete();
-        }
     }
 
     /**
@@ -151,7 +63,7 @@ public class App {
                 File inputFile = new File(compiledProjectDir + File.separator + filePath);
                 File outputFile = new File(targetUpdatePackageDir + File.separator + filePath);
                 // 如果是目录，就只创建目录
-                if (isDirectory(targetUpdatePackageDir + File.separator + filePath)) {
+                if (FileUtils.isDirectory(targetUpdatePackageDir + File.separator + filePath)) {
                     outputFile.mkdirs();
                     continue;
                 }
@@ -184,13 +96,20 @@ public class App {
     }
 
     /**
-     * 是否是目录
+     * 生成 shell 文件
      *
-     * @param filePath
-     * @return
+     * @param command
+     * @throws FileNotFoundException
      */
-    private static boolean isDirectory(String filePath) {
-        return filePath.lastIndexOf(".") == -1;
+    private static void buildShellFile(String command) throws FileNotFoundException {
+        // 写 shell 文件
+        String head = "#!/bin/sh";
+        if (OSUtils.isMacOS()) {
+            head += "\r";
+        } else if (OSUtils.isMacOSX()) {
+            head += "\n";
+        }
+        IoUtil.write(new FileOutputStream("svn-log.sh"), "UTF-8", true, head + command);
     }
 
     /**
@@ -212,7 +131,11 @@ public class App {
                     if (!"D".equalsIgnoreCase(pathEntry.getAction())) {
                         if (path.indexOf(JAVA_SRC_PREFIX) != -1) {
                             targetFilePath = findJavaCompiledFile(path);
-                            filePathList.addAll(findInnerClassFiles(compiledProjectDir, targetFilePath));
+                            // 查找内部类
+                            List<String> innerClassPaths = findInnerClassFiles(compiledProjectDir, targetFilePath);
+                            if (innerClassPaths != null) {
+                                filePathList.addAll(innerClassPaths);
+                            }
                         } else if (path.indexOf(RESOURCE_PREFIX) != -1) {
                             targetFilePath = findResourceFile(path);
                         } else if (path.indexOf(OTHER_PREFIX) != -1) {
@@ -235,26 +158,6 @@ public class App {
         }
         result.setData(filePathList);
         return result;
-    }
-
-    /**
-     * 处理目录最后的分隔符
-     *
-     * @param dir
-     * @return
-     */
-    private static String postProcessDir(String dir) {
-        // 处理最后的分隔符
-        if (dir.endsWith("/")) {
-            dir = dir.substring(0, dir.lastIndexOf("/"));
-        }
-        if (dir.endsWith("\\")) {
-            dir = dir.substring(0, dir.lastIndexOf("/"));
-        }
-        if (dir.endsWith(File.separator)) {
-            dir = dir.substring(0, dir.lastIndexOf(File.separator));
-        }
-        return dir;
     }
 
     /**
@@ -304,7 +207,6 @@ public class App {
      */
     private static List<String> findInnerClassFiles(String compiledProjectDir, String classFilePath) {
         File file = new File(compiledProjectDir + File.separator + classFilePath);
-        List<String> fileList = new ArrayList<>();
         if (!file.exists()) {
             throw new RuntimeException(file.getAbsolutePath() + " 文件不存在");
         }
@@ -312,13 +214,13 @@ public class App {
             String fileNameNoSuffix = file.getName().substring(0, file.getName().lastIndexOf("."));
             String prefix = classFilePath.substring(0, classFilePath.lastIndexOf(fileNameNoSuffix));
             File[] folderFiles = file.getParentFile().listFiles();
-            for (File ele : folderFiles) {
-                if (ele.getName().contains(fileNameNoSuffix + "$")) {
-                    fileList.add(prefix + ele.getName());
-                }
-            }
+            // 查找并收集所有的内部类
+            return Arrays.stream(folderFiles)
+                    .filter(folder -> folder.getName().contains(fileNameNoSuffix + "$"))
+                    .map(folder -> prefix + folder.getName())
+                    .collect(Collectors.toList());
         }
-        return fileList;
+        return null;
     }
 
     /**
@@ -326,75 +228,97 @@ public class App {
      *
      * @param setting
      */
-    private static void buildSvnChangelogFile(Setting setting) throws Exception {
-        String command;
-        String result;
-        if (OSUtils.isWindows()) {
-            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
-                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
-            } else {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
-                        setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+    private static void generateSvnChangelogFile(Setting setting) throws Exception {
+        // 没有填写密码则执行不需要密码的命令
+        if (StringUtils.isEmpty(setting.getUsername()) && StringUtils.isEmpty(setting.getPassword())) {
+            if (OSUtils.isWindows()) {
+                exec_svn_log_command_for_windows(setting, false);
+            } else if (OSUtils.isLinux()) {
+                exec_svn_log_command_for_linux(setting, false);
+            } else if (OSUtils.isMacOS() || OSUtils.isMacOSX()) {
+                exec_svn_log_command_for_shell(setting, false);
             }
-
-            CommandUtils.exec(command);
-        } else if (OSUtils.isLinux()) {
-            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
-                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL());
-            } else {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX,
-                        setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL());
+        } else {
+            if (OSUtils.isWindows()) {
+                exec_svn_log_command_for_windows(setting, true);
+            } else if (OSUtils.isLinux()) {
+                exec_svn_log_command_for_linux(setting, true);
+            } else if (OSUtils.isMacOS() || OSUtils.isMacOSX()) {
+                exec_svn_log_command_for_shell(setting, true);
             }
-
-            result = CommandUtils.exec(command);
-            // 写 xml 文件
-            IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
-        } else if (OSUtils.isMacOS() || OSUtils.isMacOSX()) {
-            if ((setting.getUsername() == null || "".equals(setting.getUsername()))
-                    && (setting.getPassword() == null || "".equals(setting.getPassword()))) {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
-            } else {
-                command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
-                        setting.getUsername(), setting.getPassword(),
-                        buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                        setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
-            }
-            // 生成 shell 文件
-            buildShellFile(command);
-            // 执行 shell 文件
-            CommandUtils.exec("/bin/sh ./svn-log.sh");
-            // 删除 shell 文件
-            deleteFile("svn-log.sh");
         }
     }
 
     /**
-     * 生成 shell 文件
+     * 执行 windows 下对应的 svn 命令
      *
-     * @param command
-     * @throws FileNotFoundException
+     * @param setting
+     * @param hasPassword
      */
-    private static void buildShellFile(String command) throws FileNotFoundException {
-        // 写 shell 文件
-        String head = "#!/bin/sh";
-        if (OSUtils.isMacOS()) {
-            head += "\r";
-        } else if (OSUtils.isMacOSX()) {
-            head += "\n";
+    private static void exec_svn_log_command_for_windows(Setting setting, boolean hasPassword) {
+        String command;
+        if (!hasPassword) {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+        } else {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
+                    setting.getUsername(), setting.getPassword(),
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
         }
-        IoUtil.write(new FileOutputStream("svn-log.sh"), "UTF-8", true, head + command);
+        CommandUtils.exec(command);
+    }
+
+    /**
+     * 执行 Linux 下对应的 svn 命令
+     *
+     * @param setting
+     * @param hasPassword
+     */
+    private static void exec_svn_log_command_for_linux(Setting setting, boolean hasPassword) throws FileNotFoundException {
+        String command;
+        if (!hasPassword) {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_LINUX,
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL());
+        } else {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_LINUX,
+                    setting.getUsername(), setting.getPassword(),
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL());
+        }
+
+        String result = CommandUtils.exec(command);
+        // 写 xml 文件
+        IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
+    }
+
+    /**
+     * 执行 Mac 下对应的 svn 命令
+     *
+     * @param setting
+     * @param hasPassword
+     */
+    private static void exec_svn_log_command_for_shell(Setting setting, boolean hasPassword) throws FileNotFoundException {
+        String command;
+        if (!hasPassword) {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+        } else {
+            command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
+                    setting.getUsername(), setting.getPassword(),
+                    buildSvnVersionNumberParams(setting.getVersionNumbers()),
+                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+        }
+
+        // 生成 shell 文件
+        buildShellFile(command);
+        // 执行 shell 文件
+        CommandUtils.exec("/bin/sh ./svn-log.sh");
+        // 删除 shell 文件
+        FileUtils.deleteFile("svn-log.sh");
     }
 
     /**
@@ -447,7 +371,7 @@ public class App {
     }
 
     /**
-     * 获取配置
+     * 获取默认配置，并使用后置处理器合并用户配置
      *
      * @return
      */
@@ -473,8 +397,8 @@ public class App {
             userSetting.setSvnChangelogOutPath(defaultSetting.getSvnChangelogOutPath());
         }
 
-        userSetting.setCompiledProjectDir(postProcessDir(userSetting.getCompiledProjectDir()));
-        userSetting.setTargetUpdatePackageDir(postProcessDir(userSetting.getTargetUpdatePackageDir()));
+        userSetting.setCompiledProjectDir(FileUtils.processDirectoryPath(userSetting.getCompiledProjectDir()));
+        userSetting.setTargetUpdatePackageDir(FileUtils.processDirectoryPath(userSetting.getTargetUpdatePackageDir()));
 
         return userSetting;
     }

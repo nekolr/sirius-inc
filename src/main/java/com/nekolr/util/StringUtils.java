@@ -25,4 +25,14 @@ public class StringUtils {
         return Arrays.asList(splits);
     }
 
+    /**
+     * 判断字符串是否为空
+     *
+     * @param content
+     * @return
+     */
+    public static boolean isEmpty(String content) {
+        return content == null || "".equals(content);
+    }
+
 }

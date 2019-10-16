@@ -10,14 +10,14 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+import static com.nekolr.Constants.TITLE;
+
 /**
  * 主视图
  *
  * @author nekolr
  */
-public class Main extends Application {
-
-    private static final String TITLE = "Sirius 增量包生成工具 0.7.0";
+public class MainView extends Application {
 
     @Override
     public void start(Stage primaryStage) {

@@ -1,8 +1,7 @@
 package com.nekolr.view.controller;
 
-
 import cn.hutool.core.io.IoUtil;
-import com.nekolr.App;
+import com.nekolr.service.ApplicationService;
 import com.nekolr.model.Setting;
 import com.nekolr.util.LogUtils;
 import com.nekolr.util.YmlUtils;
@@ -20,17 +19,14 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import static com.nekolr.Constants.USER_LAST_SETTING_FILE;
+
 /**
  * 主视图控制器
  *
  * @author nekolr
  */
-public class MainController implements Initializable {
-
-    /**
-     * 用户上次配置存放的文件
-     */
-    private static final String USER_LAST_SETTING_FILE = System.getProperty("user.home") + File.separator + "sirius_inc_last_setting.yml";
+public class MainViewController implements Initializable {
 
     @FXML
     private TextField svnRepositoryURL;
@@ -111,7 +107,7 @@ public class MainController implements Initializable {
     private void executeMainLogic() {
         Setting userSetting = this.fillSetting();
         try {
-            boolean hasError = App.run(userSetting);
+            boolean hasError = ApplicationService.run(userSetting);
             if (hasError) {
                 alert("成功", "存在部分错误，请查看日志：" + LogUtils.getLogFile(), "执行完毕");
             } else {
