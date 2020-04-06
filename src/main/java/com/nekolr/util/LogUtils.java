@@ -8,12 +8,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.nekolr.Constants.HOME_PATH;
+
 /**
  * 日志工具
  */
 public class LogUtils {
 
-    private static final String LOG_FILE = System.getProperty("user.home") + File.separator + "sirius_inc.log";
+    public static final String LOG_FILE = HOME_PATH + File.separator + "sirius_inc.log";
 
     private LogUtils() {
 

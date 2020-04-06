@@ -31,13 +31,13 @@ public class ApplicationService {
      */
     public static boolean run(Setting userSetting) throws Exception {
         // 获取全局配置
-        Setting setting = getDefaultSetting(userSetting);
+        Setting setting = postProcessSetting(userSetting);
         // 生成 svn changelog 文件
         generateSvnChangelogFile(setting);
         // 解析 svn changelog 文件
-        List<LogEntry> logEntryList = parseXml(setting.getSvnChangelogOutPath());
+        List<LogEntry> logEntryList = parseXml(SVN_CHANGELOG_OUTPUT_PATH);
         // 解析完毕后删除 changelog 文件
-        FileUtils.deleteFile(setting.getSvnChangelogOutPath());
+        FileUtils.deleteFile(SVN_CHANGELOG_OUTPUT_PATH);
         // 收集所有的文件路径
         Result<List<String>> result = collectTargetFileList(logEntryList, setting.getCompiledProjectDir());
         // 生成更新包
@@ -45,7 +45,7 @@ public class ApplicationService {
         // 打开更新包目录
         FileUtils.openDirectoryUnderWindows(setting.getTargetUpdatePackageDir());
 
-        return result.isHasError();
+        return result.isError();
     }
 
     /**
@@ -149,7 +149,7 @@ public class ApplicationService {
                         } else {
                             // 写日志
                             LogUtils.write("svn 文件路径：[" + path + "] 没有找到对应的编译后文件");
-                            result.setHasError(Boolean.TRUE);
+                            result.setError(Boolean.TRUE);
                         }
                         filePathList.add(targetFilePath);
                     }
@@ -253,19 +253,19 @@ public class ApplicationService {
      * 执行 windows 下对应的 svn 命令
      *
      * @param setting
-     * @param hasPassword
+     * @param hasPassword 是否需要 svn 密码
      */
     private static void exec_svn_log_command_for_windows(Setting setting, boolean hasPassword) {
         String command;
         if (!hasPassword) {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_WINDOWS,
                     buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+                    setting.getSvnRepositoryURL(), SVN_CHANGELOG_OUTPUT_PATH);
         } else {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_WINDOWS,
                     setting.getUsername(), setting.getPassword(),
                     buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+                    setting.getSvnRepositoryURL(), SVN_CHANGELOG_OUTPUT_PATH);
         }
         CommandUtils.exec(command);
     }
@@ -291,7 +291,7 @@ public class ApplicationService {
 
         String result = CommandUtils.exec(command);
         // 写 xml 文件
-        IoUtil.write(new FileOutputStream(setting.getSvnChangelogOutPath()), "GBK", true, result);
+        IoUtil.write(new FileOutputStream(SVN_CHANGELOG_OUTPUT_PATH), "GBK", true, result);
     }
 
     /**
@@ -305,12 +305,12 @@ public class ApplicationService {
         if (!hasPassword) {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL,
                     buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+                    setting.getSvnRepositoryURL(), SVN_CHANGELOG_OUTPUT_PATH);
         } else {
             command = MessageFormat.format(SVN_LOG_COMMAND_TEMPLATE_WITH_PASSWORD_FOR_SHELL,
                     setting.getUsername(), setting.getPassword(),
                     buildSvnVersionNumberParams(setting.getVersionNumbers()),
-                    setting.getSvnRepositoryURL(), setting.getSvnChangelogOutPath());
+                    setting.getSvnRepositoryURL(), SVN_CHANGELOG_OUTPUT_PATH);
         }
 
         // 生成 shell 文件
@@ -371,32 +371,12 @@ public class ApplicationService {
     }
 
     /**
-     * 获取默认配置，并使用后置处理器合并用户配置
-     *
-     * @return
-     */
-    private static Setting getDefaultSetting(Setting userSetting) {
-        InputStream input = ClassUtils.getDefaultClassLoader().getResourceAsStream("setting.yml");
-        Setting defaultSetting = YmlUtils.loadYml(input, Setting.class);
-        userSetting = postProcessSetting(userSetting, defaultSetting);
-        return userSetting;
-    }
-
-    /**
      * 后置处理配置
      *
      * @param userSetting
-     * @param defaultSetting
      * @return
      */
-    private static Setting postProcessSetting(Setting userSetting, Setting defaultSetting) {
-        if (defaultSetting.getSvnChangelogOutPath() == null || DEFAULT_OUT_PATH.equals(defaultSetting.getSvnChangelogOutPath())) {
-            defaultSetting.setSvnChangelogOutPath(System.getProperty("user.home") + File.separator + "changelog.xml");
-        }
-        if (userSetting.getSvnChangelogOutPath() == null) {
-            userSetting.setSvnChangelogOutPath(defaultSetting.getSvnChangelogOutPath());
-        }
-
+    private static Setting postProcessSetting(Setting userSetting) {
         userSetting.setCompiledProjectDir(FileUtils.processDirectoryPath(userSetting.getCompiledProjectDir()));
         userSetting.setTargetUpdatePackageDir(FileUtils.processDirectoryPath(userSetting.getTargetUpdatePackageDir()));
 
@@ -410,9 +390,7 @@ public class ApplicationService {
      * @return
      */
     private static String buildSvnVersionNumberParams(String versionNumbers) {
-        String[] numbers = versionNumbers.split(" ");
-        StringBuilder stringBuilder = new StringBuilder();
-        Arrays.stream(numbers).forEach(number -> stringBuilder.append(" -r " + number));
-        return stringBuilder.toString();
+        String[] numbers = versionNumbers.trim().split(" ");
+        return Arrays.stream(numbers).map(number -> " -r " + number).collect(Collectors.joining());
     }
 }

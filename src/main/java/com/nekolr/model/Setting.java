@@ -20,11 +20,6 @@ public class Setting {
     private String svnRepositoryURL;
 
     /**
-     * 生成 svn changelog 的磁盘路径，默认情况下在用户目录下生成，文件名为 changelog.xml
-     */
-    private String svnChangelogOutPath;
-
-    /**
      * 编译后的项目根目录，WEB-INF 的上一级
      */
     private String compiledProjectDir;

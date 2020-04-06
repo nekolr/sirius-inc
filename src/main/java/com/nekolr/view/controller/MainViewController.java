@@ -19,6 +19,7 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import static com.nekolr.Constants.HOME_PATH;
 import static com.nekolr.Constants.USER_LAST_SETTING_FILE;
 
 /**
@@ -43,6 +44,7 @@ public class MainViewController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        initHome();
         // 启动前加载上次的配置
         try {
             File lastSettingFile = new File(USER_LAST_SETTING_FILE);
@@ -143,6 +145,13 @@ public class MainViewController implements Initializable {
         }
 
         return true;
+    }
+
+    private void initHome() {
+        File home = new File(HOME_PATH);
+        if (!home.exists()) {
+            home.mkdir();
+        }
     }
 
     /**

@@ -40,11 +40,6 @@ public class Constants {
     public static final String SVN_LOG_COMMAND_TEMPLATE_FOR_SHELL = "svn log --xml -v {0} {1} > {2}";
 
     /**
-     * 如果配置默认的输出路径为 USER_PRO_FILE，则表示使用用户目录
-     */
-    public static final String DEFAULT_OUT_PATH = "USER_PRO_FILE";
-
-    /**
      * java 源代码一般所在目录前缀
      */
     public static final String JAVA_SRC_PREFIX = "src/main/java";
@@ -75,9 +70,19 @@ public class Constants {
     public static final String OTHER_PREFIX = "src/main/webapp";
 
     /**
+     * 工作目录
+     */
+    public static final String HOME_PATH = System.getProperty("user.home") + File.separator + ".sirius_inc";
+
+    /**
      * 用户上次配置存放的文件
      */
-    public static final String USER_LAST_SETTING_FILE = System.getProperty("user.home") + File.separator + "sirius_inc_last_setting.yml";
+    public static final String USER_LAST_SETTING_FILE = HOME_PATH + File.separator + "last_setting.yml";
+
+    /**
+     * SVN 命令执行后的输出文件
+     */
+    public static final String SVN_CHANGELOG_OUTPUT_PATH = HOME_PATH + File.separator + "changelog.xml";
 
     /**
      * 标题

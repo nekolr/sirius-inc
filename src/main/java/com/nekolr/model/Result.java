@@ -17,5 +17,5 @@ public class Result<T> {
     /**
      * 有错误
      */
-    private boolean hasError = false;
+    private boolean error = false;
 }
