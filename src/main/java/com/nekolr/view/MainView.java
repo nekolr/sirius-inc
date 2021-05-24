@@ -48,7 +48,4 @@ public class MainView extends Application {
         }
     }
 
-    public static void main(String[] args) {
-        launch(args);
-    }
 }
